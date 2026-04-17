@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão - PI</title>
+    <style>
+        /* ========================
+           PALETA DE CORES E VARIÁVEIS
+           ======================== */
+        :root {
+            --champagne: #F5E2C8;
+            --salmon: #D88373;
+            --mahogany: #BD1E1E;
+            --graphite: #33312E;
+            --midnight-blue: #18206F;
+            --deep-navy: #17255A;
+            --white: #FFFFFF;
+            --light-gray: #f4f4f9;
+            --border-color: #ddd;
+            --overlay: rgba(0, 0, 0, 0.7);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--champagne);
+            color: var(--graphite);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ========================
+           MODAIS E OVERLAYS
+           ======================== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--overlay);
+            display: none; 
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal-card {
+            background: var(--white);
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: modalIn 0.3s ease;
+        }
+
+        @keyframes modalIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        .confirm-box {
+            text-align: center;
+        }
+
+        .confirm-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+
+        /* ========================
+           LOGIN SECTION
+           ======================== */
+        #login-section {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--graphite);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: opacity 0.5s ease;
+        }
+
+        .login-card {
+            background-color: var(--champagne);
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+
+        /* ========================
+           LAYOUT PRINCIPAL
+           ======================== */
+        #app-container {
+            display: none;
+            width: 100%;
+            height: 100%;
+        }
+
+        aside {
+            background-color: var(--graphite);
+            width: 250px;
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+        }
+
+        .nav-btn {
+            background: none;
+            border: none;
+            color: var(--champagne);
+            padding: 15px 20px;
+            text-align: left;
+            cursor: pointer;
+            transition: 0.3s;
+            border-left: 4px solid transparent;
+        }
+
+        .nav-btn.active {
+            background-color: rgba(245, 226, 200, 0.1);
+            border-left-color: var(--mahogany);
+            color: var(--salmon);
+        }
+
+        main {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .view-section { display: none; }
+        .view-section.active { display: block; }
+
+        .card {
+            background: var(--white);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+
+        /* ========================
+           TABELAS E STATUS
+           ======================== */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background-color: var(--midnight-blue);
+            color: white;
+            padding: 12px;
+            text-align: left;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        tr.clickable { cursor: pointer; }
+        tr.clickable:hover { background-color: #fcf4e9; }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: inline-block;
+            text-align: center;
+            min-width: 120px;
+            transition: transform 0.2s;
+        }
+        
+        .badge:hover {
+            transform: scale(1.05);
+            filter: brightness(0.95);
+        }
+
+        .badge-danger { background: #ffeaea; color: var(--mahogany); border: 1px solid var(--mahogany); }
+        .badge-success { background: #eaffe8; color: #2e7d32; border: 1px solid #2e7d32; }
+        .badge-warning { background: #fff8ea; color: #f57f17; border: 1px solid #f57f17; }
+
+        /* ========================
+           FORMULÁRIOS
+           ======================== */
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .full { grid-column: span 2; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 10px; }
+        label { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
+        input, select, textarea { padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; }
+
+        .btn { padding: 10px 20px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; }
+        .btn-danger { background: var(--mahogany); color: white; }
+        .btn-gray { background: #888; color: white; }
+
+        .photo-placeholder {
+            width: 100px;
+            height: 100px;
+            background: #eee;
+            border: 2px dashed #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 10px;
+            font-size: 0.7rem;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ==================== MODAL DE CONFIRMAÇÃO ==================== -->
+    <div id="modal-confirm" class="modal-overlay">
+        <div class="modal-card confirm-box">
+            <h3 id="confirm-title">Confirmar Ação</h3>
+            <p id="confirm-msg" style="margin: 15px 0; color: #666;"></p>
+            <div class="confirm-actions">
+                <button class="btn btn-gray" onclick="closeConfirm()">Cancelar</button>
+                <button class="btn btn-danger" id="confirm-yes">Sim, Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL DE EDIÇÃO DE STATUS (PRANCHETA) ==================== -->
+    <div id="modal-status" class="modal-overlay">
+        <div class="modal-card" style="max-width: 400px; text-align: center;">
+            <h3>Alterar Status</h3>
+            <p style="margin-bottom: 20px; font-size: 0.9rem;">Selecione o novo estado da prancheta:</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="badge badge-success" style="width: 100%; padding: 15px;" onclick="aplicarNovoStatus('Pago')">Pago</button>
+                <button class="badge badge-warning" style="width: 100%; padding: 15px;" onclick="aplicarNovoStatus('Não pago')">Não pago</button>
+                <button class="badge badge-danger" style="width: 100%; padding: 15px;" onclick="aplicarNovoStatus('Prazo Esgotado')">Prazo Esgotado</button>
+            </div>
+            <button class="btn btn-gray" style="margin-top: 20px; width: 100%;" onclick="fecharModalStatus()">Cancelar</button>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL DE EDIÇÃO DE PRODUTO ==================== -->
+    <div id="modal-produto" class="modal-overlay">
+        <div class="modal-card" style="max-width: 600px;">
+            <h2 style="margin-bottom: 20px; color: var(--graphite);">Editar Produto</h2>
+            <form id="edit-prod-form">
+                <input type="hidden" id="edit-prod-id-internal">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label>Código/ID</label>
+                        <input type="text" id="edit-prod-id" readonly style="background: #eee;">
+                    </div>
+                    <div class="form-group">
+                        <label>Nome do Produto</label>
+                        <input type="text" id="edit-prod-nome" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Preço Unitário (R$)</label>
+                        <input type="number" step="0.01" id="edit-prod-preco" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Quantidade em Estoque</label>
+                        <input type="number" id="edit-prod-qtd" required>
+                    </div>
+                    <div class="form-group full">
+                        <label>Descrição</label>
+                        <textarea id="edit-prod-desc" rows="3"></textarea>
+                    </div>
+                    <div class="form-group full">
+                        <label>Foto do Produto</label>
+                        <div class="photo-placeholder">Sem Foto</div>
+                        <input type="file" accept="image/*">
+                    </div>
+                </div>
+                <div style="display: flex; justify-content: space-between; margin-top: 20px;">
+                    <button type="button" class="btn btn-danger" id="btn-excluir-prod-trigger">Excluir Produto</button>
+                    <div style="display: flex; gap: 10px;">
+                        <button type="button" class="btn btn-gray" onclick="closeProdModal()">Cancelar</button>
+                        <button type="submit" class="btn" style="background: var(--midnight-blue); color: white;">Finalizar</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== TELA DE LOGIN ==================== -->
+    <div id="login-section">
+        <div class="login-card">
+            <h2 style="color: var(--mahogany); margin-bottom: 20px;">Gestão de Pranchetas</h2>
+            <form id="loginForm">
+                <input type="text" placeholder="Usuário" required style="margin-bottom: 10px; width: 100%;">
+                <input type="password" placeholder="Senha" required style="margin-bottom: 10px; width: 100%;">
+                <input type="text" placeholder="2FA Code" required style="margin-bottom: 15px; width: 100%;">
+                <button type="submit" class="btn btn-danger" style="width: 100%;">Acessar</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== APP CONTAINER ==================== -->
+    <div id="app-container">
+        <aside>
+            <div style="padding: 20px; color: white; text-align: center; border-bottom: 1px solid #444;">
+                <h3>Menu Principal</h3>
+            </div>
+            <nav style="display: flex; flex-direction: column; flex: 1;">
+                <button class="nav-btn active" data-view="view-estoque">📦 Estoque</button>
+                <button class="nav-btn" data-view="view-clientes">👥 Clientes</button>
+                <button class="nav-btn" data-view="view-pranchetas">📋 Pranchetas</button>
+                <button class="btn btn-danger" style="margin: 20px;" onclick="location.reload()">Sair</button>
+            </nav>
+        </aside>
+
+        <main>
+            <!-- VIEW: ESTOQUE -->
+            <section id="view-estoque" class="view-section active">
+                <div class="card">
+                    <h2>Estoque de Produtos</h2>
+                    <p style="font-size: 0.8rem; color: #666; margin-bottom: 15px;">Dica: Clique em um produto da lista para editá-lo.</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Nome</th>
+                                <th>Preço (Un)</th>
+                                <th>Qtd</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-produtos">
+                            <!-- JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VIEW: CLIENTES -->
+            <section id="view-clientes" class="view-section">
+                <div class="card">
+                    <h2>Cadastro de Clientes</h2>
+                    <form id="form-add-cliente" style="margin-top: 15px;">
+                        <div class="form-grid">
+                            <input type="text" id="new-cli-nome" placeholder="Nome Completo" required>
+                            <input type="text" id="new-cli-tel" placeholder="Telefone">
+                            <input type="text" id="new-cli-cpf" placeholder="CPF" class="full">
+                        </div>
+                        <button type="submit" class="btn btn-danger" style="margin-top: 10px;">Cadastrar</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Lista de Clientes</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Telefone</th>
+                                <th>CPF</th>
+                                <th>Ação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-clientes">
+                            <!-- JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VIEW: PRANCHETAS -->
+            <section id="view-pranchetas" class="view-section">
+                <div class="card">
+                    <h2>Nova Prancheta</h2>
+                    <form id="form-add-prancheta" style="margin-top: 15px;">
+                        <div class="form-grid">
+                            <select id="pran-cli-select" required>
+                                <option value="">Selecionar Cliente...</option>
+                            </select>
+                            <input type="number" step="0.01" id="pran-valor" placeholder="Valor Total (R$)" required>
+                            <input type="date" id="pran-data" required class="full">
+                        </div>
+                        <button type="submit" class="btn btn-danger" style="margin-top: 10px;">Gerar Prancheta</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Listagem de Pranchetas</h2>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Cliente</th>
+                                <th>Total</th>
+                                <th>Vencimento</th>
+                                <th>Status (Clique p/ Mudar)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lista-pranchetas">
+                            <!-- JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // --- DADOS MOCK ---
+        let db = {
+            produtos: [
+                { id: "101", nome: "Papel Sulfite A4", preco: 25.90, qtd: 5, desc: "Pacote 500 folhas" },
+                { id: "102", nome: "Caneta BIC Azul", preco: 2.50, qtd: 150, desc: "Caixa c/ 50 unidades" }
+            ],
+            clientes: [
+                { id: 1, nome: "Carlos Oliveira", tel: "11 99999-0000", cpf: "123.456.789-10" }
+            ],
+            pranchetas: [
+                { id: "PRN-5521", cliente: "Carlos Oliveira", valor: 120.00, data: "2024-05-15", status: "Não pago" }
+            ]
+        };
+
+        // --- NAVEGAÇÃO ---
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById(btn.dataset.view).classList.add('active');
+            });
+        });
+
+        // --- LOGIN ---
+        document.getElementById('loginForm').onsubmit = (e) => {
+            e.preventDefault();
+            document.getElementById('login-section').style.display = 'none';
+            document.getElementById('app-container').style.display = 'flex';
+            renderAll();
+        };
+
+        // --- SISTEMA DE MODAIS ---
+        let confirmAction = null;
+        let pranchetaEmEdicaoStatus = null;
+
+        function openConfirm(title, msg, onYes) {
+            document.getElementById('confirm-title').innerText = title;
+            document.getElementById('confirm-msg').innerText = msg;
+            document.getElementById('modal-confirm').style.display = 'flex';
+            confirmAction = onYes;
+        }
+
+        function closeConfirm() { 
+            document.getElementById('modal-confirm').style.display = 'none'; 
+        }
+
+        document.getElementById('confirm-yes').onclick = () => { 
+            if (confirmAction) confirmAction(); 
+            closeConfirm(); 
+        };
+
+        // --- GESTÃO DE PRODUTOS ---
+        function openProdModal(pId) {
+            const p = db.produtos.find(prod => prod.id == pId);
+            if(!p) return;
+            document.getElementById('edit-prod-id-internal').value = p.id;
+            document.getElementById('edit-prod-id').value = p.id;
+            document.getElementById('edit-prod-nome').value = p.nome;
+            document.getElementById('edit-prod-preco').value = p.preco;
+            document.getElementById('edit-prod-qtd').value = p.qtd;
+            document.getElementById('edit-prod-desc').value = p.desc || '';
+            document.getElementById('modal-produto').style.display = 'flex';
+        }
+
+        function closeProdModal() { 
+            document.getElementById('modal-produto').style.display = 'none'; 
+        }
+
+        document.getElementById('edit-prod-form').onsubmit = (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-prod-id-internal').value;
+            const nome = document.getElementById('edit-prod-nome').value;
+            const preco = parseFloat(document.getElementById('edit-prod-preco').value);
+            const qtd = parseInt(document.getElementById('edit-prod-qtd').value);
+            const desc = document.getElementById('edit-prod-desc').value;
+
+            closeProdModal();
+
+            openConfirm("Finalizar Edição", "Deseja salvar as alterações neste produto?", () => {
+                const p = db.produtos.find(prod => prod.id == id);
+                if(p) {
+                    p.nome = nome;
+                    p.preco = preco;
+                    p.qtd = qtd;
+                    p.desc = desc;
+                    renderProdutos();
+                }
+            });
+        };
+
+        document.getElementById('btn-excluir-prod-trigger').onclick = () => {
+            const id = document.getElementById('edit-prod-id-internal').value;
+            closeProdModal();
+            openConfirm("Excluir Produto", "Tem certeza que deseja remover este produto permanentemente?", () => {
+                db.produtos = db.produtos.filter(p => p.id != id);
+                renderProdutos();
+            });
+        };
+
+        // --- GESTÃO DE CLIENTES ---
+        document.getElementById('form-add-cliente').onsubmit = (e) => {
+            e.preventDefault();
+            db.clientes.push({
+                id: Date.now(),
+                nome: document.getElementById('new-cli-nome').value,
+                tel: document.getElementById('new-cli-tel').value,
+                cpf: document.getElementById('new-cli-cpf').value
+            });
+            e.target.reset();
+            renderClientes();
+        };
+
+        function removerCliente(id) {
+            openConfirm("Remover Cliente", "Realmente deseja remover este cliente? Esta ação não pode ser desfeita.", () => {
+                db.clientes = db.clientes.filter(c => c.id != id);
+                renderClientes();
+            });
+        }
+
+        // --- GESTÃO DE PRANCHETAS ---
+        document.getElementById('form-add-prancheta').onsubmit = (e) => {
+            e.preventDefault();
+            db.pranchetas.push({
+                id: "PRN-" + Math.floor(1000 + Math.random() * 9000),
+                cliente: document.getElementById('pran-cli-select').value,
+                valor: parseFloat(document.getElementById('pran-valor').value),
+                data: document.getElementById('pran-data').value,
+                status: "Não pago"
+            });
+            e.target.reset();
+            renderPranchetas();
+        };
+
+        // Função para abrir o modal de status
+        function abrirModalStatus(id) {
+            pranchetaEmEdicaoStatus = id;
+            document.getElementById('modal-status').style.display = 'flex';
+        }
+
+        function fecharModalStatus() {
+            document.getElementById('modal-status').style.display = 'none';
+            pranchetaEmEdicaoStatus = null;
+        }
+
+        function aplicarNovoStatus(novoStatus) {
+            if (pranchetaEmEdicaoStatus) {
+                const p = db.pranchetas.find(pran => pran.id === pranchetaEmEdicaoStatus);
+                if (p) {
+                    p.status = novoStatus;
+                    renderPranchetas();
+                }
+            }
+            fecharModalStatus();
+        }
+
+        // --- RENDERIZADORES ---
+        function renderProdutos() {
+            const html = db.produtos.map(p => `
+                <tr class="clickable" onclick="openProdModal('${p.id}')">
+                    <td>${p.id}</td>
+                    <td>${p.nome}</td>
+                    <td>R$ ${p.preco.toFixed(2)}</td>
+                    <td style="color: ${p.qtd <= 10 ? 'red' : 'inherit'}; font-weight: ${p.qtd <= 10 ? 'bold' : 'normal'}">${p.qtd}</td>
+                    <td>${p.qtd <= 10 ? '<span class="badge badge-danger">Baixo</span>' : '<span class="badge badge-success">OK</span>'}</td>
+                </tr>
+            `).join('');
+            document.getElementById('lista-produtos').innerHTML = html;
+        }
+
+        function renderClientes() {
+            const html = db.clientes.map(c => `
+                <tr>
+                    <td>${c.nome}</td>
+                    <td>${c.tel}</td>
+                    <td>${c.cpf}</td>
+                    <td><button class="btn btn-danger" style="padding: 5px 10px;" onclick="removerCliente(${c.id})">Remover</button></td>
+                </tr>
+            `).join('');
+            document.getElementById('lista-clientes').innerHTML = html;
+            
+            const select = document.getElementById('pran-cli-select');
+            select.innerHTML = '<option value="">Selecionar Cliente...</option>' + 
+                db.clientes.map(c => `<option value="${c.nome}">${c.nome}</option>`).join('');
+        }
+
+        function renderPranchetas() {
+            const html = db.pranchetas.map(p => {
+                let badgeClass = 'badge-warning';
+                if(p.status === 'Pago') badgeClass = 'badge-success';
+                if(p.status === 'Prazo Esgotado') badgeClass = 'badge-danger';
+                
+                return `
+                <tr>
+                    <td><strong>${p.id}</strong></td>
+                    <td>${p.cliente}</td>
+                    <td>R$ ${p.valor.toFixed(2).replace('.', ',')}</td>
+                    <td>${new Date(p.data + 'T00:00:00').toLocaleDateString('pt-BR')}</td>
+                    <td><button class="badge ${badgeClass}" onclick="abrirModalStatus('${p.id}')">${p.status}</button></td>
+                </tr>
+            `}).join('');
+            document.getElementById('lista-pranchetas').innerHTML = html;
+        }
+
+        function renderAll() {
+            renderProdutos();
+            renderClientes();
+            renderPranchetas();
+        }
+    </script>
+</body>
+</html>
