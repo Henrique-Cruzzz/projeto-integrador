@@ -57,9 +57,11 @@
             padding: 30px;
             border-radius: 8px;
             width: 90%;
-            max-width: 500px;
+            max-width: 600px; /* Aumentado para acomodar os novos campos */
             box-shadow: 0 10px 30px rgba(0,0,0,0.3);
             animation: modalIn 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
         }
 
         @keyframes modalIn {
@@ -69,6 +71,7 @@
 
         .confirm-box {
             text-align: center;
+            max-width: 400px;
         }
 
         .confirm-actions {
@@ -131,6 +134,7 @@
             cursor: pointer;
             transition: 0.3s;
             border-left: 4px solid transparent;
+            font-size: 1rem;
         }
 
         .nav-btn.active {
@@ -155,10 +159,21 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
         }
+        
+        .header-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
 
         /* ========================
            TABELAS E STATUS
            ======================== */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
         table {
             width: 100%;
             border-collapse: collapse;
@@ -169,11 +184,13 @@
             color: white;
             padding: 12px;
             text-align: left;
+            font-size: 0.9rem;
         }
 
         td {
             padding: 12px;
             border-bottom: 1px solid var(--border-color);
+            font-size: 0.9rem;
         }
 
         tr.clickable { cursor: pointer; }
@@ -182,13 +199,13 @@
         .badge {
             padding: 6px 12px;
             border-radius: 20px;
-            font-size: 0.85rem;
+            font-size: 0.80rem;
             font-weight: 600;
             cursor: pointer;
             border: none;
             display: inline-block;
             text-align: center;
-            min-width: 120px;
+            min-width: 100px;
             transition: transform 0.2s;
         }
         
@@ -200,19 +217,24 @@
         .badge-danger { background: #ffeaea; color: var(--mahogany); border: 1px solid var(--mahogany); }
         .badge-success { background: #eaffe8; color: #2e7d32; border: 1px solid #2e7d32; }
         .badge-warning { background: #fff8ea; color: #f57f17; border: 1px solid #f57f17; }
+        .badge-info { background: #e3f2fd; color: #1565c0; border: 1px solid #1565c0; } /* Para Entrada/Saída */
 
         /* ========================
            FORMULÁRIOS
            ======================== */
         .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-        .full { grid-column: span 2; }
+        .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; }
+        .full { grid-column: 1 / -1; }
         .form-group { display: flex; flex-direction: column; margin-bottom: 10px; }
-        label { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
-        input, select, textarea { padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; }
+        label { font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; color: var(--deep-navy); }
+        input, select, textarea { padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 0.9rem;}
 
-        .btn { padding: 10px 20px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; }
+        .btn { padding: 10px 20px; border-radius: 4px; border: none; font-weight: bold; cursor: pointer; font-size: 0.9rem; }
         .btn-danger { background: var(--mahogany); color: white; }
+        .btn-primary { background: var(--midnight-blue); color: white; }
+        .btn-success { background: #2e7d32; color: white; }
         .btn-gray { background: #888; color: white; }
+        .btn-outline { background: transparent; border: 1px solid var(--midnight-blue); color: var(--midnight-blue); }
 
         .photo-placeholder {
             width: 100px;
@@ -226,9 +248,33 @@
             font-size: 0.7rem;
             color: #999;
         }
+
+        /* ========================
+           ÁREA DE IMPRESSÃO (RELATÓRIOS)
+           ======================== */
+        #print-area { display: none; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area {
+                display: block;
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white;
+                color: black;
+                padding: 20px;
+            }
+            .badge { border: none; font-weight: bold; }
+        }
     </style>
 </head>
 <body>
+
+    <!-- ==================== ÁREA DE IMPRESSÃO (ESCONDIDA) ==================== -->
+    <div id="print-area"></div>
 
     <!-- ==================== MODAL DE CONFIRMAÇÃO ==================== -->
     <div id="modal-confirm" class="modal-overlay">
@@ -242,61 +288,80 @@
         </div>
     </div>
 
-    <!-- ==================== MODAL DE EDIÇÃO DE STATUS (PRANCHETA) ==================== -->
-    <div id="modal-status" class="modal-overlay">
-        <div class="modal-card" style="max-width: 400px; text-align: center;">
-            <h3>Alterar Status</h3>
-            <p style="margin-bottom: 20px; font-size: 0.9rem;">Selecione o novo estado da prancheta:</p>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <button class="badge badge-success" style="width: 100%; padding: 15px;" onclick="aplicarNovoStatus('Pago')">Pago</button>
-                <button class="badge badge-warning" style="width: 100%; padding: 15px;" onclick="aplicarNovoStatus('Não pago')">Não pago</button>
-                <button class="badge badge-danger" style="width: 100%; padding: 15px;" onclick="aplicarNovoStatus('Prazo Esgotado')">Prazo Esgotado</button>
-            </div>
-            <button class="btn btn-gray" style="margin-top: 20px; width: 100%;" onclick="fecharModalStatus()">Cancelar</button>
-        </div>
-    </div>
-
-    <!-- ==================== MODAL DE EDIÇÃO DE PRODUTO ==================== -->
+    <!-- ==================== MODAL DE EDIÇÃO/CRIÇÃO DE PRODUTO ==================== -->
     <div id="modal-produto" class="modal-overlay">
-        <div class="modal-card" style="max-width: 600px;">
-            <h2 style="margin-bottom: 20px; color: var(--graphite);">Editar Produto</h2>
+        <div class="modal-card">
+            <h2 id="modal-prod-title" style="margin-bottom: 20px; color: var(--graphite);">Editar Produto</h2>
             <form id="edit-prod-form">
                 <input type="hidden" id="edit-prod-id-internal">
                 <div class="form-grid">
                     <div class="form-group">
                         <label>Código/ID</label>
-                        <input type="text" id="edit-prod-id" readonly style="background: #eee;">
+                        <input type="text" id="edit-prod-id" readonly style="background: #eee;" placeholder="Gerado automaticamente">
                     </div>
                     <div class="form-group">
                         <label>Nome do Produto</label>
                         <input type="text" id="edit-prod-nome" required>
                     </div>
                     <div class="form-group">
+                        <label>Categoria</label>
+                        <select id="edit-prod-cat" required>
+                            <!-- JS -->
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label>Preço Unitário (R$)</label>
                         <input type="number" step="0.01" id="edit-prod-preco" required>
                     </div>
                     <div class="form-group">
-                        <label>Quantidade em Estoque</label>
+                        <label>Quantidade Atual em Estoque</label>
                         <input type="number" id="edit-prod-qtd" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Estoque Mínimo</label>
+                        <input type="number" id="edit-prod-est-min" required>
                     </div>
                     <div class="form-group full">
                         <label>Descrição</label>
-                        <textarea id="edit-prod-desc" rows="3"></textarea>
-                    </div>
-                    <div class="form-group full">
-                        <label>Foto do Produto</label>
-                        <div class="photo-placeholder">Sem Foto</div>
-                        <input type="file" accept="image/*">
+                        <textarea id="edit-prod-desc" rows="2"></textarea>
                     </div>
                 </div>
                 <div style="display: flex; justify-content: space-between; margin-top: 20px;">
                     <button type="button" class="btn btn-danger" id="btn-excluir-prod-trigger">Excluir Produto</button>
                     <div style="display: flex; gap: 10px;">
                         <button type="button" class="btn btn-gray" onclick="closeProdModal()">Cancelar</button>
-                        <button type="submit" class="btn" style="background: var(--midnight-blue); color: white;">Finalizar</button>
+                        <button type="submit" class="btn btn-primary">Salvar</button>
                     </div>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL DE NOVA CATEGORIA ==================== -->
+    <div id="modal-categoria" class="modal-overlay">
+        <div class="modal-card confirm-box">
+            <h3 style="margin-bottom: 15px;">Nova Categoria</h3>
+            <form id="form-add-categoria">
+                <input type="text" id="nova-cat-nome" placeholder="Nome da Categoria" required style="width: 100%; margin-bottom: 15px;">
+                <div class="confirm-actions">
+                    <button type="button" class="btn btn-gray" onclick="closeCatModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ==================== MODAL DE EDIÇÃO DE STATUS (PRANCHETA) ==================== -->
+    <div id="modal-status" class="modal-overlay">
+        <div class="modal-card" style="max-width: 400px; text-align: center;">
+            <h3>Alterar Status</h3>
+            <p style="margin-bottom: 20px; font-size: 0.9rem;">Selecione o novo estado:</p>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <button class="badge badge-success" style="width: 100%; padding: 15px;" onclick="aplicarNovoStatus('Pago')">Pago</button>
+                <button class="badge badge-warning" style="width: 100%; padding: 15px;" onclick="aplicarNovoStatus('Não pago')">Não pago</button>
+                <button class="badge badge-danger" style="width: 100%; padding: 15px;" onclick="aplicarNovoStatus('Prazo Esgotado')">Prazo Esgotado</button>
+            </div>
+            <button class="btn btn-gray" style="margin-top: 20px; width: 100%;" onclick="fecharModalStatus()">Cancelar</button>
         </div>
     </div>
 
@@ -321,9 +386,12 @@
             </div>
             <nav style="display: flex; flex-direction: column; flex: 1;">
                 <button class="nav-btn active" data-view="view-estoque">📦 Estoque</button>
+                <button class="nav-btn" data-view="view-fornecedores">🏭 Fornecedores</button>
+                <button class="nav-btn" data-view="view-movimentacoes">🔄 Movimentações</button>
                 <button class="nav-btn" data-view="view-clientes">👥 Clientes</button>
                 <button class="nav-btn" data-view="view-pranchetas">📋 Pranchetas</button>
-                <button class="btn btn-danger" style="margin: 20px;" onclick="location.reload()">Sair</button>
+                <button class="nav-btn" data-view="view-relatorios">📄 Relatórios</button>
+                <button class="btn btn-danger" style="margin: 20px; margin-top: auto;" onclick="location.reload()">Sair</button>
             </nav>
         </aside>
 
@@ -331,22 +399,116 @@
             <!-- VIEW: ESTOQUE -->
             <section id="view-estoque" class="view-section active">
                 <div class="card">
-                    <h2>Estoque de Produtos</h2>
+                    <div class="header-actions">
+                        <h2>Estoque de Produtos</h2>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-outline" onclick="openCatModal()">+ Cadastrar Categoria</button>
+                            <button class="btn btn-primary" onclick="openProdModalNovo()">+ Novo Produto</button>
+                        </div>
+                    </div>
                     <p style="font-size: 0.8rem; color: #666; margin-bottom: 15px;">Dica: Clique em um produto da lista para editá-lo.</p>
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Nome</th>
-                                <th>Preço (Un)</th>
-                                <th>Qtd</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody id="lista-produtos">
-                            <!-- JS -->
-                        </tbody>
-                    </table>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nome</th>
+                                    <th>Categoria</th>
+                                    <th>Preço (Un)</th>
+                                    <th>Qtd</th>
+                                    <th>Estq. Mínimo</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-produtos">
+                                <!-- JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: FORNECEDORES -->
+            <section id="view-fornecedores" class="view-section">
+                <div class="card">
+                    <h2>Cadastrar Fornecedor</h2>
+                    <form id="form-add-fornecedor" style="margin-top: 15px;">
+                        <div class="form-grid-3">
+                            <input type="text" id="forn-nome" placeholder="Nome do Fornecedor / Empresa" required>
+                            <input type="text" id="forn-doc" placeholder="CPF ou CNPJ" required>
+                            <select id="forn-cat" required>
+                                <option value="">Categoria de Fornecimento...</option>
+                            </select>
+                        </div>
+                        <div class="form-grid-3" style="margin-top: 15px;">
+                            <input type="text" id="forn-cep" placeholder="CEP">
+                            <input type="text" id="forn-rua" placeholder="Rua / Avenida" class="full" style="grid-column: span 2;">
+                            <input type="text" id="forn-num" placeholder="Número">
+                            <input type="text" id="forn-bairro" placeholder="Bairro">
+                            <input type="text" id="forn-cidade" placeholder="Cidade">
+                            <input type="text" id="forn-pais" placeholder="País" value="Brasil">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Cadastrar Fornecedor</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Lista de Fornecedores</h2>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>CNPJ/CPF</th>
+                                    <th>Categoria</th>
+                                    <th>Cidade/País</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-fornecedores">
+                                <!-- JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: MOVIMENTAÇÕES -->
+            <section id="view-movimentacoes" class="view-section">
+                <div class="card">
+                    <h2>Registrar Movimentação (Entrada/Saída)</h2>
+                    <form id="form-add-mov" style="margin-top: 15px;">
+                        <div class="form-grid">
+                            <select id="mov-prod" required>
+                                <option value="">Selecione o Produto...</option>
+                            </select>
+                            <select id="mov-acao" required>
+                                <option value="Entrada">Entrada (Adicionar ao Estoque)</option>
+                                <option value="Saída">Saída (Retirar do Estoque)</option>
+                            </select>
+                            <input type="number" id="mov-qtd" placeholder="Quantidade" min="1" required>
+                            <input type="text" id="mov-obs" placeholder="Observação/Motivo (Opcional)">
+                        </div>
+                        <button type="submit" class="btn btn-primary" style="margin-top: 15px;">Registrar Movimentação</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <h2>Histórico de Movimentações</h2>
+                    <div class="table-responsive">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Data/Hora</th>
+                                    <th>Produto</th>
+                                    <th>Categoria</th>
+                                    <th>Ação</th>
+                                    <th>Quantidade</th>
+                                </tr>
+                            </thead>
+                            <tbody id="lista-movimentacoes">
+                                <!-- JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </section>
 
@@ -360,7 +522,7 @@
                             <input type="text" id="new-cli-tel" placeholder="Telefone">
                             <input type="text" id="new-cli-cpf" placeholder="CPF" class="full">
                         </div>
-                        <button type="submit" class="btn btn-danger" style="margin-top: 10px;">Cadastrar</button>
+                        <button type="submit" class="btn btn-danger" style="margin-top: 10px;">Cadastrar Cliente</button>
                     </form>
                 </div>
                 <div class="card">
@@ -414,15 +576,45 @@
                     </table>
                 </div>
             </section>
+
+            <!-- VIEW: RELATÓRIOS -->
+            <section id="view-relatorios" class="view-section">
+                <div class="card">
+                    <h2>Gerador de Relatórios (PDF/Impressão)</h2>
+                    <p style="margin-bottom: 20px; color: #666;">Selecione o tipo de relatório que deseja gerar. O sistema abrirá a interface de impressão onde você poderá salvar como PDF.</p>
+                    
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                        <div style="border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; flex: 1; min-width: 250px; text-align: center;">
+                            <h3 style="margin-bottom: 15px; color: var(--midnight-blue);">Entradas e Saídas</h3>
+                            <p style="font-size: 0.85rem; margin-bottom: 15px; color: #555;">Gera um relatório completo do histórico de todas as movimentações de produtos no sistema.</p>
+                            <button class="btn btn-primary" onclick="gerarPDFMovimentacoes()">Gerar Relatório</button>
+                        </div>
+
+                        <div style="border: 1px solid var(--border-color); padding: 20px; border-radius: 8px; flex: 1; min-width: 250px; text-align: center;">
+                            <h3 style="margin-bottom: 15px; color: var(--midnight-blue);">Estoque por Categoria</h3>
+                            <p style="font-size: 0.85rem; margin-bottom: 15px; color: #555;">Gera um relatório agrupando a quantidade total de produtos disponíveis divididos por categoria.</p>
+                            <button class="btn btn-primary" onclick="gerarPDFCategorias()">Gerar Relatório</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
         </main>
     </div>
 
     <script>
-        // --- DADOS MOCK ---
+        // --- DADOS MOCK (BANCO DE DADOS EM MEMÓRIA) ---
         let db = {
+            categorias: ["Papelaria", "Escritório", "Serviços Gráficos", "Insumos"],
             produtos: [
-                { id: "101", nome: "Papel Sulfite A4", preco: 25.90, qtd: 5, desc: "Pacote 500 folhas" },
-                { id: "102", nome: "Caneta BIC Azul", preco: 2.50, qtd: 150, desc: "Caixa c/ 50 unidades" }
+                { id: "101", nome: "Papel Sulfite A4", categoria: "Papelaria", preco: 25.90, qtd: 5, estoqueMinimo: 10, desc: "Pacote 500 folhas" },
+                { id: "102", nome: "Caneta BIC Azul", categoria: "Escritório", preco: 2.50, qtd: 150, estoqueMinimo: 50, desc: "Caixa c/ 50 unidades" },
+                { id: "103", nome: "Tinta de Impressora Preta", categoria: "Insumos", preco: 85.00, qtd: 12, estoqueMinimo: 5, desc: "Cartucho 15ml" }
+            ],
+            fornecedores: [
+                { id: 1, nome: "Distribuidora Kalunga", doc: "00.000.000/0001-00", categoria: "Papelaria", cep: "01000-000", rua: "Rua Direita", num: "100", bairro: "Centro", cidade: "São Paulo", pais: "Brasil" }
+            ],
+            movimentacoes: [
+                { id: 1, data: "2024-05-10 14:30", produtoId: "102", produtoNome: "Caneta BIC Azul", categoria: "Escritório", acao: "Entrada", qtd: 50 }
             ],
             clientes: [
                 { id: 1, nome: "Carlos Oliveira", tel: "11 99999-0000", cpf: "123.456.789-10" }
@@ -453,6 +645,7 @@
         // --- SISTEMA DE MODAIS ---
         let confirmAction = null;
         let pranchetaEmEdicaoStatus = null;
+        let isNovoProduto = false;
 
         function openConfirm(title, msg, onYes) {
             document.getElementById('confirm-title').innerText = title;
@@ -470,16 +663,53 @@
             closeConfirm(); 
         };
 
+        // --- GESTÃO DE CATEGORIAS ---
+        function openCatModal() { document.getElementById('modal-categoria').style.display = 'flex'; }
+        function closeCatModal() { document.getElementById('modal-categoria').style.display = 'none'; }
+        
+        document.getElementById('form-add-categoria').onsubmit = (e) => {
+            e.preventDefault();
+            const nova = document.getElementById('nova-cat-nome').value.trim();
+            if(nova && !db.categorias.includes(nova)) {
+                db.categorias.push(nova);
+                atualizarSelectsCategorias();
+            }
+            e.target.reset();
+            closeCatModal();
+            alert("Categoria cadastrada com sucesso!");
+        };
+
+        function atualizarSelectsCategorias() {
+            const options = '<option value="">Selecione...</option>' + db.categorias.map(c => `<option value="${c}">${c}</option>`).join('');
+            document.getElementById('edit-prod-cat').innerHTML = options;
+            document.getElementById('forn-cat').innerHTML = options;
+        }
+
         // --- GESTÃO DE PRODUTOS ---
+        function openProdModalNovo() {
+            isNovoProduto = true;
+            document.getElementById('modal-prod-title').innerText = "Novo Produto";
+            document.getElementById('edit-prod-form').reset();
+            document.getElementById('edit-prod-id-internal').value = "";
+            document.getElementById('edit-prod-id').value = ""; // Fica vazio para mostrar o placeholder
+            document.getElementById('btn-excluir-prod-trigger').style.display = 'none';
+            document.getElementById('modal-produto').style.display = 'flex';
+        }
+
         function openProdModal(pId) {
+            isNovoProduto = false;
+            document.getElementById('modal-prod-title').innerText = "Editar Produto";
             const p = db.produtos.find(prod => prod.id == pId);
             if(!p) return;
             document.getElementById('edit-prod-id-internal').value = p.id;
             document.getElementById('edit-prod-id').value = p.id;
             document.getElementById('edit-prod-nome').value = p.nome;
+            document.getElementById('edit-prod-cat').value = p.categoria;
             document.getElementById('edit-prod-preco').value = p.preco;
             document.getElementById('edit-prod-qtd').value = p.qtd;
+            document.getElementById('edit-prod-est-min').value = p.estoqueMinimo || 0;
             document.getElementById('edit-prod-desc').value = p.desc || '';
+            document.getElementById('btn-excluir-prod-trigger').style.display = 'block';
             document.getElementById('modal-produto').style.display = 'flex';
         }
 
@@ -489,24 +719,31 @@
 
         document.getElementById('edit-prod-form').onsubmit = (e) => {
             e.preventDefault();
-            const id = document.getElementById('edit-prod-id-internal').value;
             const nome = document.getElementById('edit-prod-nome').value;
+            const categoria = document.getElementById('edit-prod-cat').value;
             const preco = parseFloat(document.getElementById('edit-prod-preco').value);
             const qtd = parseInt(document.getElementById('edit-prod-qtd').value);
+            const estMin = parseInt(document.getElementById('edit-prod-est-min').value);
             const desc = document.getElementById('edit-prod-desc').value;
 
             closeProdModal();
 
-            openConfirm("Finalizar Edição", "Deseja salvar as alterações neste produto?", () => {
-                const p = db.produtos.find(prod => prod.id == id);
-                if(p) {
-                    p.nome = nome;
-                    p.preco = preco;
-                    p.qtd = qtd;
-                    p.desc = desc;
-                    renderProdutos();
-                }
-            });
+            if (isNovoProduto) {
+                const novoId = Math.floor(100 + Math.random() * 900).toString();
+                db.produtos.push({ id: novoId, nome, categoria, preco, qtd, estoqueMinimo: estMin, desc });
+                renderProdutos();
+                atualizarSelectsProdutos(); // Atualiza dropdown de movimentações
+            } else {
+                const id = document.getElementById('edit-prod-id-internal').value;
+                openConfirm("Finalizar Edição", "Deseja salvar as alterações neste produto?", () => {
+                    const p = db.produtos.find(prod => prod.id == id);
+                    if(p) {
+                        p.nome = nome; p.categoria = categoria; p.preco = preco; p.qtd = qtd; p.estoqueMinimo = estMin; p.desc = desc;
+                        renderProdutos();
+                        atualizarSelectsProdutos();
+                    }
+                });
+            }
         };
 
         document.getElementById('btn-excluir-prod-trigger').onclick = () => {
@@ -515,10 +752,83 @@
             openConfirm("Excluir Produto", "Tem certeza que deseja remover este produto permanentemente?", () => {
                 db.produtos = db.produtos.filter(p => p.id != id);
                 renderProdutos();
+                atualizarSelectsProdutos();
             });
         };
 
-        // --- GESTÃO DE CLIENTES ---
+        function atualizarSelectsProdutos() {
+            const select = document.getElementById('mov-prod');
+            select.innerHTML = '<option value="">Selecione o Produto...</option>' + 
+                db.produtos.map(p => `<option value="${p.id}">${p.id} - ${p.nome}</option>`).join('');
+        }
+
+        // --- GESTÃO DE FORNECEDORES ---
+        document.getElementById('form-add-fornecedor').onsubmit = (e) => {
+            e.preventDefault();
+            db.fornecedores.push({
+                id: Date.now(),
+                nome: document.getElementById('forn-nome').value,
+                doc: document.getElementById('forn-doc').value,
+                categoria: document.getElementById('forn-cat').value,
+                cep: document.getElementById('forn-cep').value,
+                rua: document.getElementById('forn-rua').value,
+                num: document.getElementById('forn-num').value,
+                bairro: document.getElementById('forn-bairro').value,
+                cidade: document.getElementById('forn-cidade').value,
+                pais: document.getElementById('forn-pais').value
+            });
+            e.target.reset();
+            renderFornecedores();
+            alert("Fornecedor cadastrado com sucesso!");
+        };
+
+        function removerFornecedor(id) {
+            openConfirm("Remover Fornecedor", "Deseja remover este fornecedor do sistema?", () => {
+                db.fornecedores = db.fornecedores.filter(f => f.id != id);
+                renderFornecedores();
+            });
+        }
+
+        // --- GESTÃO DE MOVIMENTAÇÕES ---
+        document.getElementById('form-add-mov').onsubmit = (e) => {
+            e.preventDefault();
+            const prodId = document.getElementById('mov-prod').value;
+            const acao = document.getElementById('mov-acao').value;
+            const qtdMov = parseInt(document.getElementById('mov-qtd').value);
+            
+            const produto = db.produtos.find(p => p.id == prodId);
+            if(!produto) return alert("Produto não encontrado!");
+
+            if(acao === 'Saída' && produto.qtd < qtdMov) {
+                return alert("Quantidade insuficiente em estoque para esta saída!");
+            }
+
+            // Atualiza Estoque
+            if(acao === 'Entrada') produto.qtd += qtdMov;
+            else if(acao === 'Saída') produto.qtd -= qtdMov;
+
+            // Registra Histórico
+            const dataAtual = new Date();
+            const dataFormatada = `${dataAtual.toLocaleDateString('pt-BR')} ${dataAtual.getHours()}:${String(dataAtual.getMinutes()).padStart(2, '0')}`;
+
+            db.movimentacoes.unshift({
+                id: Date.now(),
+                data: dataFormatada,
+                produtoId: produto.id,
+                produtoNome: produto.nome,
+                categoria: produto.categoria,
+                acao: acao,
+                qtd: qtdMov
+            });
+
+            e.target.reset();
+            renderMovimentacoes();
+            renderProdutos(); // Atualiza tabela de estoque
+            alert(`Movimentação de ${acao} registrada com sucesso!`);
+        };
+
+
+        // --- GESTÃO DE CLIENTES E PRANCHETAS (Existentes) ---
         document.getElementById('form-add-cliente').onsubmit = (e) => {
             e.preventDefault();
             db.clientes.push({
@@ -538,21 +848,31 @@
             });
         }
 
-        // --- GESTÃO DE PRANCHETAS ---
         document.getElementById('form-add-prancheta').onsubmit = (e) => {
             e.preventDefault();
+            
+            const dataSelecionada = document.getElementById('pran-data').value;
+            const dataObj = new Date(dataSelecionada + 'T00:00:00');
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
+            let statusInicial = "Não pago";
+            // Valida se a data já passou no momento da criação
+            if (dataObj < hoje) {
+                statusInicial = "Prazo Esgotado";
+            }
+
             db.pranchetas.push({
                 id: "PRN-" + Math.floor(1000 + Math.random() * 9000),
                 cliente: document.getElementById('pran-cli-select').value,
                 valor: parseFloat(document.getElementById('pran-valor').value),
-                data: document.getElementById('pran-data').value,
-                status: "Não pago"
+                data: dataSelecionada,
+                status: statusInicial
             });
             e.target.reset();
             renderPranchetas();
         };
 
-        // Função para abrir o modal de status
         function abrirModalStatus(id) {
             pranchetaEmEdicaoStatus = id;
             document.getElementById('modal-status').style.display = 'flex';
@@ -566,26 +886,55 @@
         function aplicarNovoStatus(novoStatus) {
             if (pranchetaEmEdicaoStatus) {
                 const p = db.pranchetas.find(pran => pran.id === pranchetaEmEdicaoStatus);
-                if (p) {
-                    p.status = novoStatus;
-                    renderPranchetas();
-                }
+                if (p) { p.status = novoStatus; renderPranchetas(); }
             }
             fecharModalStatus();
         }
 
         // --- RENDERIZADORES ---
         function renderProdutos() {
-            const html = db.produtos.map(p => `
+            const html = db.produtos.map(p => {
+                const isBaixo = p.qtd <= p.estoqueMinimo;
+                return `
                 <tr class="clickable" onclick="openProdModal('${p.id}')">
                     <td>${p.id}</td>
-                    <td>${p.nome}</td>
-                    <td>R$ ${p.preco.toFixed(2)}</td>
-                    <td style="color: ${p.qtd <= 10 ? 'red' : 'inherit'}; font-weight: ${p.qtd <= 10 ? 'bold' : 'normal'}">${p.qtd}</td>
-                    <td>${p.qtd <= 10 ? '<span class="badge badge-danger">Baixo</span>' : '<span class="badge badge-success">OK</span>'}</td>
+                    <td><strong>${p.nome}</strong></td>
+                    <td>${p.categoria}</td>
+                    <td>R$ ${p.preco.toFixed(2).replace('.',',')}</td>
+                    <td style="color: ${isBaixo ? 'var(--mahogany)' : 'inherit'}; font-weight: ${isBaixo ? 'bold' : 'normal'}">${p.qtd}</td>
+                    <td>${p.estoqueMinimo}</td>
+                    <td>${isBaixo ? '<span class="badge badge-danger">Baixo</span>' : '<span class="badge badge-success">OK</span>'}</td>
+                </tr>
+            `}).join('');
+            document.getElementById('lista-produtos').innerHTML = html;
+        }
+
+        function renderFornecedores() {
+            const html = db.fornecedores.map(f => `
+                <tr>
+                    <td><strong>${f.nome}</strong></td>
+                    <td>${f.doc}</td>
+                    <td>${f.categoria}</td>
+                    <td>${f.cidade}/${f.pais}</td>
+                    <td><button class="btn btn-danger" style="padding: 5px 10px;" onclick="removerFornecedor(${f.id})">Remover</button></td>
                 </tr>
             `).join('');
-            document.getElementById('lista-produtos').innerHTML = html;
+            document.getElementById('lista-fornecedores').innerHTML = html;
+        }
+
+        function renderMovimentacoes() {
+            const html = db.movimentacoes.map(m => {
+                const badgeClass = m.acao === 'Entrada' ? 'badge-success' : 'badge-danger';
+                return `
+                <tr>
+                    <td>${m.data}</td>
+                    <td>${m.produtoId} - ${m.produtoNome}</td>
+                    <td>${m.categoria}</td>
+                    <td><span class="badge ${badgeClass}">${m.acao}</span></td>
+                    <td><strong>${m.qtd}</strong></td>
+                </tr>
+            `}).join('');
+            document.getElementById('lista-movimentacoes').innerHTML = html;
         }
 
         function renderClientes() {
@@ -605,7 +954,16 @@
         }
 
         function renderPranchetas() {
+            const hoje = new Date();
+            hoje.setHours(0, 0, 0, 0);
+
             const html = db.pranchetas.map(p => {
+                // Se a data já passou e o status ainda estiver "Não pago", ele atualiza de forma dinâmica
+                const dataVenc = new Date(p.data + 'T00:00:00');
+                if (p.status === 'Não pago' && dataVenc < hoje) {
+                    p.status = 'Prazo Esgotado';
+                }
+
                 let badgeClass = 'badge-warning';
                 if(p.status === 'Pago') badgeClass = 'badge-success';
                 if(p.status === 'Prazo Esgotado') badgeClass = 'badge-danger';
@@ -623,9 +981,92 @@
         }
 
         function renderAll() {
+            atualizarSelectsCategorias();
+            atualizarSelectsProdutos();
             renderProdutos();
+            renderFornecedores();
+            renderMovimentacoes();
             renderClientes();
             renderPranchetas();
+        }
+
+        // --- GERADORES DE RELATÓRIO (PDF/Print) ---
+        function triggerPrint(htmlContent) {
+            const printArea = document.getElementById('print-area');
+            const dataEmissao = new Date().toLocaleString('pt-BR');
+            
+            printArea.innerHTML = `
+                <div style="text-align: center; border-bottom: 2px solid var(--midnight-blue); padding-bottom: 20px; margin-bottom: 20px;">
+                    <h1 style="color: var(--midnight-blue);">Sistema de Gestão PI</h1>
+                    <p style="color: #666;">Relatório Gerencial</p>
+                    <p style="font-size: 0.8rem; color: #999;">Emitido em: ${dataEmissao}</p>
+                </div>
+                ${htmlContent}
+                <div style="margin-top: 50px; text-align: center; font-size: 0.8rem; color: #666;">
+                    Fim do Relatório
+                </div>
+            `;
+            window.print();
+        }
+
+        function gerarPDFMovimentacoes() {
+            let trs = db.movimentacoes.map(m => `
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">${m.data}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">${m.produtoNome}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">${m.categoria}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd;">${m.acao}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #ddd; text-align: right;">${m.qtd}</td>
+                </tr>
+            `).join('');
+
+            const html = `
+                <h2 style="margin-bottom: 15px;">Relatório: Entradas e Saídas (Movimentações)</h2>
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background: var(--light-gray);">
+                            <th style="padding: 10px; border-bottom: 2px solid #ccc;">Data/Hora</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #ccc;">Produto</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #ccc;">Categoria</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #ccc;">Ação</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #ccc; text-align: right;">Qtd</th>
+                        </tr>
+                    </thead>
+                    <tbody>${trs || '<tr><td colspan="5" style="text-align:center; padding:20px;">Nenhuma movimentação registrada.</td></tr>'}</tbody>
+                </table>
+            `;
+            triggerPrint(html);
+        }
+
+        function gerarPDFCategorias() {
+            // Agrupar produtos por categoria e somar quantidades
+            let agrupamento = {};
+            db.categorias.forEach(c => agrupamento[c] = 0);
+            db.produtos.forEach(p => {
+                if(agrupamento[p.categoria] !== undefined) agrupamento[p.categoria] += p.qtd;
+                else agrupamento[p.categoria] = p.qtd;
+            });
+
+            let trs = Object.keys(agrupamento).map(cat => `
+                <tr>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd; font-weight: bold;">${cat}</td>
+                    <td style="padding: 10px; border-bottom: 1px solid #ddd; text-align: right;">${agrupamento[cat]} un.</td>
+                </tr>
+            `).join('');
+
+            const html = `
+                <h2 style="margin-bottom: 15px;">Relatório: Quantidade de Produtos por Categoria</h2>
+                <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                    <thead>
+                        <tr style="background: var(--light-gray);">
+                            <th style="padding: 10px; border-bottom: 2px solid #ccc;">Categoria</th>
+                            <th style="padding: 10px; border-bottom: 2px solid #ccc; text-align: right;">Qtd Total em Estoque</th>
+                        </tr>
+                    </thead>
+                    <tbody>${trs}</tbody>
+                </table>
+            `;
+            triggerPrint(html);
         }
     </script>
 </body>
